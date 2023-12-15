@@ -1,82 +1,96 @@
-package com.byteflow.app.audio;
+package com.byteflow.app.audio
 
-import android.media.AudioFormat;
-import android.media.AudioRecord;
-import android.media.MediaRecorder;
-import android.os.Handler;
-import android.os.Looper;
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.AudioRecord.OnRecordPositionUpdateListener
+import android.media.MediaRecorder
+import android.os.Handler
+import android.os.Looper
+import androidx.core.app.ActivityCompat
 
-public class AudioCollector implements AudioRecord.OnRecordPositionUpdateListener{
-    private static final String TAG = "AudioRecorderWrapper";
-    private static final int RECORDER_SAMPLE_RATE = 44100;
-    private static final int RECORDER_CHANNELS = 1;
-    private static final int RECORDER_ENCODING_BIT = 16;
-    private static final int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
-    private AudioRecord mAudioRecord;
-    private Thread mThread;
-    private short[] mAudioBuffer;
-    private Handler mHandler;
-    private int mBufferSize;
-    private Callback mCallback;
+class AudioCollector : OnRecordPositionUpdateListener {
+    private var mAudioRecord: AudioRecord? = null
+    private var mThread: Thread? = null
+    private var mAudioBuffer: ShortArray? = null
+    private var mHandler: Handler? = null
+    private var mBufferSize: Int = 2 * AudioRecord.getMinBufferSize(
+        RECORDER_SAMPLE_RATE,
+        RECORDER_CHANNELS, RECORDER_AUDIO_ENCODING
+    )
+    private var mCallback: Callback? = null
 
-    public AudioCollector() {
-        mBufferSize = 2 * AudioRecord.getMinBufferSize(RECORDER_SAMPLE_RATE,
-                RECORDER_CHANNELS, RECORDER_AUDIO_ENCODING);
-    }
-
-    public void init() {
-        mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, RECORDER_SAMPLE_RATE,
-                RECORDER_CHANNELS, RECORDER_AUDIO_ENCODING, mBufferSize);
-        mAudioRecord.startRecording();
-        mThread = new Thread("Audio-Recorder") {
-            @Override
-            public void run() {
-                super.run();
-                mAudioBuffer = new short[mBufferSize];
-                Looper.prepare();
-                mHandler = new Handler(Looper.myLooper());
-                mAudioRecord.setRecordPositionUpdateListener(AudioCollector.this, mHandler);
-                int bytePerSample = RECORDER_ENCODING_BIT / 8;
-                float samplesToDraw = mBufferSize / bytePerSample;
-                mAudioRecord.setPositionNotificationPeriod((int) samplesToDraw);
-                mAudioRecord.read(mAudioBuffer, 0, mBufferSize);
-                Looper.loop();
+    fun init(context: Context) {
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        mAudioRecord = AudioRecord(
+            MediaRecorder.AudioSource.MIC,
+            RECORDER_SAMPLE_RATE,
+            RECORDER_CHANNELS,
+            RECORDER_AUDIO_ENCODING,
+            mBufferSize
+        )
+        mAudioRecord?.startRecording()
+        mThread = object : Thread("Audio-Recorder") {
+            override fun run() {
+                super.run()
+                val audioBuffer = ShortArray(mBufferSize)
+                mAudioBuffer = audioBuffer
+                Looper.prepare()
+                val looper = Looper.myLooper()?: return
+                mHandler = Handler(looper)
+                mAudioRecord?.setRecordPositionUpdateListener(this@AudioCollector, mHandler)
+                val bytePerSample = RECORDER_ENCODING_BIT / 8
+                val samplesToDraw = (mBufferSize / bytePerSample).toFloat()
+                mAudioRecord?.positionNotificationPeriod = samplesToDraw.toInt()
+                mAudioRecord?.read(audioBuffer, 0, mBufferSize)
+                Looper.loop()
             }
-        };
-        mThread.start();
+        }
+        mThread?.start()
     }
 
-    public void unInit() {
-        if(mAudioRecord != null) {
-            mAudioRecord.stop();
-            mAudioRecord.release();
-            mHandler.getLooper().quitSafely();
-            mAudioRecord = null;
+    fun unInit() {
+        mAudioRecord?.stop()
+        mAudioRecord?.release()
+        mHandler?.looper?.quitSafely()
+        mAudioRecord = null
+    }
+
+    fun addCallback(callback: Callback?) {
+        mCallback = callback
+    }
+
+    override fun onMarkerReached(recorder: AudioRecord) {}
+    override fun onPeriodicNotification(recorder: AudioRecord) {
+        val audioRecord = mAudioRecord?: return
+        val audioBuffer = mAudioBuffer?: return
+        if (audioRecord.recordingState == AudioRecord.RECORDSTATE_RECORDING && audioRecord.read(
+                audioBuffer,
+                0,
+                audioBuffer.size
+            ) != -1
+        ) {
+            mCallback?.onAudioBufferCallback(audioBuffer)
         }
     }
 
-    public void addCallback(Callback callback) {
-        mCallback = callback;
+    interface Callback {
+        fun onAudioBufferCallback(buffer: ShortArray?)
     }
 
-    @Override
-    public void onMarkerReached(AudioRecord recorder) {
-
-    }
-
-    @Override
-    public void onPeriodicNotification(AudioRecord recorder) {
-        if (mAudioRecord != null
-                && mAudioRecord.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING
-                && mAudioRecord.read(mAudioBuffer, 0, mAudioBuffer.length) != -1)
-        {
-            if(mCallback != null)
-                mCallback.onAudioBufferCallback(mAudioBuffer);
-        }
-
-    }
-
-    public interface Callback {
-        void onAudioBufferCallback(short[] buffer); //little-endian
+    companion object {
+        private const val TAG = "AudioRecorderWrapper"
+        private const val RECORDER_SAMPLE_RATE = 44100
+        private const val RECORDER_CHANNELS = 1
+        private const val RECORDER_ENCODING_BIT = 16
+        private const val RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT
     }
 }

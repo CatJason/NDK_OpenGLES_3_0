@@ -1,85 +1,71 @@
-package com.byteflow.app;
+package com.byteflow.app
 
-import android.opengl.GLSurfaceView;
-import android.util.Log;
+import android.opengl.GLSurfaceView
+import android.util.Log
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL10
 
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
+class MyGLRender internal constructor() : GLSurfaceView.Renderer {
+    private val mNativeRender: MyNativeRender = MyNativeRender()
+    var sampleType = 0
+        private set
 
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_SET_GRAVITY_XY;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_SET_TOUCH_LOC;
-
-public class MyGLRender implements GLSurfaceView.Renderer {
-    private static final String TAG = "MyGLRender";
-    private MyNativeRender mNativeRender;
-    private int mSampleType;
-
-    MyGLRender() {
-        mNativeRender = new MyNativeRender();
+    override fun onSurfaceCreated(gl: GL10, config: EGLConfig) {
+        mNativeRender.native_OnSurfaceCreated()
+        Log.e(
+            TAG,
+            "onSurfaceCreated() called with: GL_VERSION = [" + gl.glGetString(GL10.GL_VERSION) + "]"
+        )
     }
 
-    @Override
-    public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        mNativeRender.native_OnSurfaceCreated();
-        Log.e(TAG, "onSurfaceCreated() called with: GL_VERSION = [" + gl.glGetString(GL10.GL_VERSION) + "]");
+    override fun onSurfaceChanged(gl: GL10, width: Int, height: Int) {
+        mNativeRender.native_OnSurfaceChanged(width, height)
     }
 
-    @Override
-    public void onSurfaceChanged(GL10 gl, int width, int height) {
-        mNativeRender.native_OnSurfaceChanged(width, height);
-
+    override fun onDrawFrame(gl: GL10) {
+        mNativeRender.native_OnDrawFrame()
     }
 
-    @Override
-    public void onDrawFrame(GL10 gl) {
-        mNativeRender.native_OnDrawFrame();
-
+    fun init() {
+        mNativeRender.native_Init()
     }
 
-    public void init() {
-        mNativeRender.native_Init();
+    fun unInit() {
+        mNativeRender.native_UnInit()
     }
 
-    public void unInit() {
-        mNativeRender.native_UnInit();
-    }
-
-    public void setParamsInt(int paramType, int value0, int value1) {
-        if (paramType == SAMPLE_TYPE) {
-            mSampleType = value0;
+    fun setParamsInt(paramType: Int, value0: Int, value1: Int) {
+        if (paramType == MyNativeRender.SAMPLE_TYPE) {
+            sampleType = value0
         }
-        mNativeRender.native_SetParamsInt(paramType, value0, value1);
+        mNativeRender.native_SetParamsInt(paramType, value0, value1)
     }
 
-    public void setTouchLoc(float x, float y)
-    {
-        mNativeRender.native_SetParamsFloat(SAMPLE_TYPE_SET_TOUCH_LOC, x, y);
+    fun setTouchLoc(x: Float, y: Float) {
+        mNativeRender.native_SetParamsFloat(MyNativeRender.SAMPLE_TYPE_SET_TOUCH_LOC, x, y)
     }
 
-    public void setGravityXY(float x, float y) {
-        mNativeRender.native_SetParamsFloat(SAMPLE_TYPE_SET_GRAVITY_XY, x, y);
+    fun setGravityXY(x: Float, y: Float) {
+        mNativeRender.native_SetParamsFloat(MyNativeRender.SAMPLE_TYPE_SET_GRAVITY_XY, x, y)
     }
 
-    public void setImageData(int format, int width, int height, byte[] bytes) {
-        mNativeRender.native_SetImageData(format, width, height, bytes);
+    fun setImageData(format: Int, width: Int, height: Int, bytes: ByteArray?) {
+        mNativeRender.native_SetImageData(format, width, height, bytes)
     }
 
-    public void setImageDataWithIndex(int index, int format, int width, int height, byte[] bytes) {
-        mNativeRender.native_SetImageDataWithIndex(index, format, width, height, bytes);
+    fun setImageDataWithIndex(index: Int, format: Int, width: Int, height: Int, bytes: ByteArray?) {
+        mNativeRender.native_SetImageDataWithIndex(index, format, width, height, bytes)
     }
 
-    public void setAudioData(short[] audioData) {
-        mNativeRender.native_SetAudioData(audioData);
+    fun setAudioData(audioData: ShortArray?) {
+        mNativeRender.native_SetAudioData(audioData)
     }
 
-    public int getSampleType() {
-        return mSampleType;
+    fun updateTransformMatrix(rotateX: Float, rotateY: Float, scaleX: Float, scaleY: Float) {
+        mNativeRender.native_UpdateTransformMatrix(rotateX, rotateY, scaleX, scaleY)
     }
 
-    public void updateTransformMatrix(float rotateX, float rotateY, float scaleX, float scaleY)
-    {
-        mNativeRender.native_UpdateTransformMatrix(rotateX, rotateY, scaleX, scaleY);
+    companion object {
+        private const val TAG = "MyGLRender"
     }
-
 }

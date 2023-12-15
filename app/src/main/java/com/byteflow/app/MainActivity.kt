@@ -4,624 +4,487 @@
  * https://github.com/githubhaohao/NDK_OpenGLES_3_0
  * 最新文章首发于公众号：字节流动，有疑问或者技术交流可以添加微信 Byte-Flow ,领取视频教程, 拉你进技术交流群
  *
- * */
+ */
+package com.byteflow.app
 
-package com.byteflow.app;
+import android.Manifest
+import android.app.AlertDialog
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.opengl.GLSurfaceView
+import android.os.Bundle
+import android.os.Environment
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import android.view.ViewTreeObserver.OnGlobalLayoutListener
+import android.widget.Button
+import android.widget.RelativeLayout
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.byteflow.app.adapter.MyRecyclerViewAdapter
+import com.byteflow.app.audio.AudioCollector
+import com.byteflow.app.egl.EGLActivity
+import java.io.IOException
+import java.nio.ByteBuffer
+import java.util.Arrays
 
-import android.Manifest;
-import android.app.AlertDialog;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
-import androidx.annotation.*;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.widget.Button;
-import android.widget.RelativeLayout;
-import android.widget.Toast;
+open class MainActivity : AppCompatActivity(), AudioCollector.Callback, OnGlobalLayoutListener,
+    SensorEventListener {
+    private var mGLSurfaceView: MyGLSurfaceView? = null
+    private var mRootView: ViewGroup? = null
+    private var mSampleSelectedIndex =
+        MyNativeRender.SAMPLE_TYPE_KEY_BEATING_HEART - MyNativeRender.SAMPLE_TYPE
+    private var mAudioCollector: AudioCollector? = null
+    private val mGLRender = MyGLRender()
+    private var mSensorManager: SensorManager? = null
 
-import com.byteflow.app.adapter.MyRecyclerViewAdapter;
-import com.byteflow.app.audio.AudioCollector;
-import com.byteflow.app.egl.EGLActivity;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Arrays;
-
-import static android.opengl.GLSurfaceView.RENDERMODE_CONTINUOUSLY;
-import static android.opengl.GLSurfaceView.RENDERMODE_WHEN_DIRTY;
-import static com.byteflow.app.MyGLSurfaceView.IMAGE_FORMAT_GARY;
-import static com.byteflow.app.MyGLSurfaceView.IMAGE_FORMAT_NV21;
-import static com.byteflow.app.MyGLSurfaceView.IMAGE_FORMAT_RGBA;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_BASIC_LIGHTING;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_BLENDING;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_COORD_SYSTEM;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_DEPTH_TESTING;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_EGL;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_FBO;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_FBO_LEG;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_INSTANCING;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_AVATAR;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_BEATING_HEART;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_BEZIER_CURVE;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_BIG_EYES;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_BIG_HEAD;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_BINARY_PROGRAM;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_BLIT_FRAME_BUFFER;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_CLOUD;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_COPY_TEXTURE;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_FACE_SLENDER;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_FBO_BLIT;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_HWBuffer;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_MRT;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_MULTI_THREAD_RENDER;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_RGB2I420;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_RGB2I444;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_RGB2NV21;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_RGB2YUYV;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_ROTARY_HEAD;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_SCRATCH_CARD;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_SHOCK_WAVE;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_STAY_COLOR;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_TBO;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_TEXT_RENDER;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_TIME_TUNNEL;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_TRANSITIONS_1;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_TRANSITIONS_2;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_TRANSITIONS_3;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_TRANSITIONS_4;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_UBO;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_KEY_VISUALIZE_AUDIO;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_MULTI_LIGHTS;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_PARTICLES;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_PBO;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_SKYBOX;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_STENCIL_TESTING;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_TEXTURE_MAP;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_TRANS_FEEDBACK;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_TRIANGLE;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_VAO;
-import static com.byteflow.app.MyNativeRender.SAMPLE_TYPE_YUV_TEXTURE_MAP;
-
-public class MainActivity extends AppCompatActivity implements AudioCollector.Callback, ViewTreeObserver.OnGlobalLayoutListener, SensorEventListener {
-    private static final String TAG = "MainActivity";
-    private static final String[] REQUEST_PERMISSIONS = {
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.RECORD_AUDIO,
-    };
-    private static final int PERMISSION_REQUEST_CODE = 1;
-    private static final String[] SAMPLE_TITLES = {
-            "DrawTriangle",
-            "TextureMap",
-            "YUV Rendering",
-            "VAO&VBO",
-            "FBO Offscreen Rendering",
-            "EGL Background Rendering",
-            "FBO Stretching",
-            "Coordinate System",
-            "Basic Lighting",
-            "Transform Feedback",
-            "Complex Lighting",
-            "Depth Testing",
-            "Instancing",
-            "Stencil Testing",
-            "Blending",
-            "Particles",
-            "SkyBox",
-            "Assimp Load 3D Model",
-            "PBO",
-            "Beating Heart",
-            "Cloud",
-            "Time Tunnel",
-            "Bezier Curve",
-            "Big Eyes",
-            "Face Slender",
-            "Big Head",
-            "Rotary Head",
-            "Visualize Audio",
-            "Scratch Card",
-            "3D Avatar",
-            "Shock Wave",
-            "MRT",
-            "FBO Blit",
-            "Texture Buffer",
-            "Uniform Buffer",
-            "RGB to YUYV",
-            "Multi-Thread Render",
-            "Text Render",
-            "Portrait stay color",
-            "GL Transitions_1",
-            "GL Transitions_2",
-            "GL Transitions_3",
-            "GL Transitions_4",
-            "RGB to NV21",
-            "RGB to I420",
-            "RGB to I444",
-            "Copy Texture",
-            "Blit Frame Buffer",
-            "Binary Program"
-    };
-
-    private MyGLSurfaceView mGLSurfaceView;
-    private ViewGroup mRootView;
-    private int mSampleSelectedIndex = SAMPLE_TYPE_KEY_BEATING_HEART - SAMPLE_TYPE;
-    private AudioCollector mAudioCollector;
-    private MyGLRender mGLRender = new MyGLRender();
-    private SensorManager mSensorManager;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        mRootView = (ViewGroup) findViewById(R.id.rootView);
-        mRootView.getViewTreeObserver().addOnGlobalLayoutListener(this);
-        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        mGLRender.init();
-
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        mRootView = findViewById<View>(R.id.rootView) as ViewGroup
+        mRootView?.viewTreeObserver?.addOnGlobalLayoutListener(this)
+        mSensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        mGLRender.init()
     }
 
-    @Override
-    public void onGlobalLayout() {
-        mRootView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        lp.addRule(RelativeLayout.CENTER_IN_PARENT);
-        mGLSurfaceView = new MyGLSurfaceView(this, mGLRender);
-        mRootView.addView(mGLSurfaceView, lp);
-        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-
+    override fun onGlobalLayout() {
+        mRootView?.viewTreeObserver?.removeOnGlobalLayoutListener(this)
+        val lp = RelativeLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+        )
+        lp.addRule(RelativeLayout.CENTER_IN_PARENT)
+        mGLSurfaceView = MyGLSurfaceView(this, mGLRender)
+        mRootView?.addView(mGLSurfaceView, lp)
+        mGLSurfaceView?.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mSensorManager.registerListener(this,
-                mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY),
-                SensorManager.SENSOR_DELAY_FASTEST);
+    override fun onResume() {
+        super.onResume()
+        mSensorManager?.registerListener(
+            this,
+            mSensorManager?.getDefaultSensor(Sensor.TYPE_GRAVITY),
+            SensorManager.SENSOR_DELAY_FASTEST
+        )
         if (!hasPermissionsGranted(REQUEST_PERMISSIONS)) {
-            ActivityCompat.requestPermissions(this, REQUEST_PERMISSIONS, PERMISSION_REQUEST_CODE);
+            ActivityCompat.requestPermissions(this, REQUEST_PERMISSIONS, PERMISSION_REQUEST_CODE)
         }
-        ///sdcard/Android/data/com.byteflow.app/files/Download
-        String fileDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
-        CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "poly", fileDir + "/model");
-        CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "fonts", fileDir);
-        CommonUtils.copyAssetsDirToSDCard(MainActivity.this, "yuv", fileDir);
+        val fileDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.absolutePath?: return
+        CommonUtils.copyAssetsDirToSDCard(this@MainActivity, "poly", "$fileDir/model")
+        CommonUtils.copyAssetsDirToSDCard(this@MainActivity, "fonts", fileDir)
+        CommonUtils.copyAssetsDirToSDCard(this@MainActivity, "yuv", fileDir)
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (!hasPermissionsGranted(REQUEST_PERMISSIONS)) {
-                Toast.makeText(this, "We need the permission: WRITE_EXTERNAL_STORAGE", Toast.LENGTH_SHORT).show();
+                Toast.makeText(
+                    this,
+                    "We need the permission: WRITE_EXTERNAL_STORAGE",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mSensorManager.unregisterListener(this);
+    override fun onPause() {
+        super.onPause()
+        mSensorManager!!.unregisterListener(this)
         if (mAudioCollector != null) {
-            mAudioCollector.unInit();
-            mAudioCollector = null;
+            mAudioCollector?.unInit()
+            mAudioCollector = null
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mGLRender.unInit();
-        /*
-        * Once the EGL context gets destroyed all the GL buffers etc will get destroyed with it,
-        * so this is unnecessary.
-        * */
+    override fun onDestroy() {
+        super.onDestroy()
+        mGLRender.unInit()
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val id = item.itemId
         if (id == R.id.action_change_sample) {
-            showGLSampleDialog();
+            showGLSampleDialog()
         }
-        return true;
+        return true
     }
 
-    @Override
-    public void onAudioBufferCallback(short[] buffer) {
-        Log.e(TAG, "onAudioBufferCallback() called with: buffer[0] = [" + buffer[0] + "]");
-        mGLRender.setAudioData(buffer);
-        //mGLSurfaceView.requestRender();
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        switch (event.sensor.getType()) {
-            case Sensor.TYPE_GRAVITY:
-                Log.d(TAG, "onSensorChanged() called with TYPE_GRAVITY: [x,y,z] = [" + event.values[0] + ", " + event.values[1] + ", " + event.values[2] + "]");
-                if(mSampleSelectedIndex + SAMPLE_TYPE == SAMPLE_TYPE_KEY_AVATAR)
-                {
-                    mGLRender.setGravityXY(event.values[0], event.values[1]);
+    override fun onSensorChanged(event: SensorEvent) {
+        when (event.sensor.type) {
+            Sensor.TYPE_GRAVITY -> {
+                Log.d(
+                    TAG,
+                    "onSensorChanged() called with TYPE_GRAVITY: [x,y,z] = [" + event.values[0] + ", " + event.values[1] + ", " + event.values[2] + "]"
+                )
+                if (mSampleSelectedIndex + MyNativeRender.SAMPLE_TYPE == MyNativeRender.SAMPLE_TYPE_KEY_AVATAR) {
+                    mGLRender.setGravityXY(event.values[0], event.values[1])
                 }
-                break;
-        }
-
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-    }
-
-    private void showGLSampleDialog() {
-        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        LayoutInflater inflater = LayoutInflater.from(this);
-        final View rootView = inflater.inflate(R.layout.sample_selected_layout, null);
-
-        final AlertDialog dialog = builder.create();
-
-        Button confirmBtn = rootView.findViewById(R.id.confirm_btn);
-        confirmBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dialog.cancel();
             }
-        });
+        }
+    }
 
-        final RecyclerView resolutionsListView = rootView.findViewById(R.id.resolution_list_view);
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
 
-        final MyRecyclerViewAdapter myPreviewSizeViewAdapter = new MyRecyclerViewAdapter(this, Arrays.asList(SAMPLE_TITLES));
-        myPreviewSizeViewAdapter.setSelectIndex(mSampleSelectedIndex);
-        myPreviewSizeViewAdapter.addOnItemClickListener(new MyRecyclerViewAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                mRootView.removeView(mGLSurfaceView);
-                RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-                lp.addRule(RelativeLayout.CENTER_IN_PARENT);
-                mGLSurfaceView = new MyGLSurfaceView(MainActivity.this, mGLRender);
-                mRootView.addView(mGLSurfaceView, lp);
-
-                int selectIndex = myPreviewSizeViewAdapter.getSelectIndex();
-                myPreviewSizeViewAdapter.setSelectIndex(position);
-                myPreviewSizeViewAdapter.notifyItemChanged(selectIndex);
-                myPreviewSizeViewAdapter.notifyItemChanged(position);
-                mSampleSelectedIndex = position;
-                mGLSurfaceView.setRenderMode(RENDERMODE_WHEN_DIRTY);
-
-                if (mRootView.getWidth() != mGLSurfaceView.getWidth()
-                        || mRootView.getHeight() != mGLSurfaceView.getHeight()) {
-                    mGLSurfaceView.setAspectRatio(mRootView.getWidth(), mRootView.getHeight());
-                }
-
-                mGLRender.setParamsInt(SAMPLE_TYPE, position + SAMPLE_TYPE, 0);
-
-                int sampleType = position + SAMPLE_TYPE;
-                Bitmap tmp;
-                switch (sampleType) {
-                    case SAMPLE_TYPE_TRIANGLE:
-                        break;
-                    case SAMPLE_TYPE_TEXTURE_MAP:
-                        loadRGBAImage(R.drawable.dzzz);
-                        break;
-                    case SAMPLE_TYPE_YUV_TEXTURE_MAP:
-                        loadNV21Image();
-                        break;
-                    case SAMPLE_TYPE_VAO:
-                        break;
-                    case SAMPLE_TYPE_FBO:
-                    case SAMPLE_TYPE_KEY_COPY_TEXTURE:
-                    case SAMPLE_TYPE_KEY_BLIT_FRAME_BUFFER:
-                    {
-                        Bitmap bitmap = loadRGBAImage(R.drawable.lye);
-                        mGLSurfaceView.setAspectRatio(bitmap.getWidth(), bitmap.getHeight());
+    private fun showGLSampleDialog() {
+        val builder = AlertDialog.Builder(this)
+        val inflater = LayoutInflater.from(this)
+        val rootView = inflater.inflate(R.layout.sample_selected_layout, null)
+        val dialog = builder.create()
+        val confirmBtn = rootView.findViewById<Button>(R.id.confirm_btn)
+        confirmBtn.setOnClickListener { dialog.cancel() }
+        val resolutionsListView = rootView.findViewById<RecyclerView>(R.id.resolution_list_view)
+        val myPreviewSizeViewAdapter = MyRecyclerViewAdapter(this, Arrays.asList(*SAMPLE_TITLES))
+        myPreviewSizeViewAdapter.selectIndex = mSampleSelectedIndex
+        myPreviewSizeViewAdapter.addOnItemClickListener(
+            object : MyRecyclerViewAdapter.OnItemClickListener{
+                override fun onItemClick(view: View?, position: Int) {
+                    mRootView?.removeView(mGLSurfaceView)
+                    val lp = RelativeLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    lp.addRule(RelativeLayout.CENTER_IN_PARENT)
+                    val glSurfaceView = MyGLSurfaceView(this@MainActivity, mGLRender)
+                    mGLSurfaceView = glSurfaceView
+                    mRootView?.addView(glSurfaceView, lp)
+                    val selectIndex = myPreviewSizeViewAdapter.selectIndex
+                    myPreviewSizeViewAdapter.selectIndex = position
+                    myPreviewSizeViewAdapter.notifyItemChanged(selectIndex)
+                    myPreviewSizeViewAdapter.notifyItemChanged(position)
+                    mSampleSelectedIndex = position
+                    mGLSurfaceView?.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
+                    if (mRootView!!.width != glSurfaceView.width
+                        || mRootView!!.height != glSurfaceView.height
+                    ) {
+                        glSurfaceView.setAspectRatio(mRootView!!.width, mRootView!!.height)
                     }
-                        break;
-                    case SAMPLE_TYPE_FBO_LEG:
-                        loadRGBAImage(R.drawable.leg);
-                        break;
-                    case SAMPLE_TYPE_EGL:
-                        startActivity(new Intent(MainActivity.this, EGLActivity.class));
-                        break;
-                    case SAMPLE_TYPE_COORD_SYSTEM:
-                    case SAMPLE_TYPE_BASIC_LIGHTING:
-                    case SAMPLE_TYPE_TRANS_FEEDBACK:
-                    case SAMPLE_TYPE_MULTI_LIGHTS:
-                    case SAMPLE_TYPE_DEPTH_TESTING:
-                    case SAMPLE_TYPE_INSTANCING:
-                    case SAMPLE_TYPE_STENCIL_TESTING:
-                        loadRGBAImage(R.drawable.board_texture);
-                        break;
-                    case SAMPLE_TYPE_BLENDING:
-                        loadRGBAImage(R.drawable.board_texture,0);
-                        loadRGBAImage(R.drawable.floor,1);
-                        loadRGBAImage(R.drawable.window,2);
-                        break;
-                    case SAMPLE_TYPE_PARTICLES:
-                        loadRGBAImage(R.drawable.board_texture);
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_SKYBOX:
-                        loadRGBAImage(R.drawable.right,0);
-                        loadRGBAImage(R.drawable.left,1);
-                        loadRGBAImage(R.drawable.top,2);
-                        loadRGBAImage(R.drawable.bottom,3);
-                        loadRGBAImage(R.drawable.back,4);
-                        loadRGBAImage(R.drawable.front,5);
-                        break;
-                    case SAMPLE_TYPE_PBO:
-                        loadRGBAImage(R.drawable.front);
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_BEATING_HEART:
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_CLOUD:
-                        loadRGBAImage(R.drawable.noise);
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_TIME_TUNNEL:
-                        loadRGBAImage(R.drawable.front);
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_BEZIER_CURVE:
-                        //loadRGBAImage(R.drawable.board_texture);
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_BIG_EYES:
-                    case SAMPLE_TYPE_KEY_FACE_SLENDER:
-                        Bitmap bitmap = loadRGBAImage(R.drawable.yifei);
-                        mGLSurfaceView.setAspectRatio(bitmap.getWidth(), bitmap.getHeight());
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_BIG_HEAD:
-                    case SAMPLE_TYPE_KEY_ROTARY_HEAD:
-                        Bitmap b = loadRGBAImage(R.drawable.huge);
-                        mGLSurfaceView.setAspectRatio(b.getWidth(), b.getHeight());
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_VISUALIZE_AUDIO:
-                        if(mAudioCollector == null) {
-                            mAudioCollector = new AudioCollector();
-                            mAudioCollector.addCallback(MainActivity.this);
-                            mAudioCollector.init();
+                    mGLRender.setParamsInt(
+                        MyNativeRender.SAMPLE_TYPE,
+                        position + MyNativeRender.SAMPLE_TYPE,
+                        0
+                    )
+                    val sampleType = position + MyNativeRender.SAMPLE_TYPE
+                    val tmp: Bitmap?
+                    when (sampleType) {
+                        MyNativeRender.SAMPLE_TYPE_TRIANGLE -> {}
+                        MyNativeRender.SAMPLE_TYPE_TEXTURE_MAP -> loadRGBAImage(R.drawable.dzzz)
+                        MyNativeRender.SAMPLE_TYPE_YUV_TEXTURE_MAP -> loadNV21Image()
+                        MyNativeRender.SAMPLE_TYPE_VAO -> {}
+                        MyNativeRender.SAMPLE_TYPE_FBO, MyNativeRender.SAMPLE_TYPE_KEY_COPY_TEXTURE, MyNativeRender.SAMPLE_TYPE_KEY_BLIT_FRAME_BUFFER -> {
+                            val bitmap = loadRGBAImage(R.drawable.lye)
+                            mGLSurfaceView!!.setAspectRatio(bitmap!!.width, bitmap.height)
                         }
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                    case SAMPLE_TYPE_KEY_SCRATCH_CARD:
-                        Bitmap b1 = loadRGBAImage(R.drawable.yifei);
-                        mGLSurfaceView.setAspectRatio(b1.getWidth(), b1.getHeight());
-                        //mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_AVATAR:
-                        Bitmap b2 = loadRGBAImage(R.drawable.avatar_a, 0);
-                        mGLSurfaceView.setAspectRatio(b2.getWidth(), b2.getHeight());
-                        loadRGBAImage(R.drawable.avatar_b, 1);
-                        loadRGBAImage(R.drawable.avatar_c, 2);
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_SHOCK_WAVE:
-                    case SAMPLE_TYPE_KEY_MULTI_THREAD_RENDER:
-                    case SAMPLE_TYPE_KEY_TEXT_RENDER:
-                        Bitmap b3 = loadRGBAImage(R.drawable.lye);
-                        mGLSurfaceView.setAspectRatio(b3.getWidth(), b3.getHeight());
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_MRT:
-                    case SAMPLE_TYPE_KEY_FBO_BLIT:
-                    case SAMPLE_TYPE_KEY_TBO:
-                    case SAMPLE_TYPE_KEY_UBO:
-                    case SAMPLE_TYPE_KEY_BINARY_PROGRAM:
-                        Bitmap b4 = loadRGBAImage(R.drawable.lye);
-                        mGLSurfaceView.setAspectRatio(b4.getWidth(), b4.getHeight());
-                        break;
-                    case SAMPLE_TYPE_KEY_RGB2YUYV:
-                    case SAMPLE_TYPE_KEY_RGB2NV21:
-                    case SAMPLE_TYPE_KEY_RGB2I420:
-                    case SAMPLE_TYPE_KEY_RGB2I444:
-                        tmp = loadRGBAImage(R.drawable.sk);
-                        mGLSurfaceView.setAspectRatio(tmp.getWidth(), tmp.getHeight());
-                        break;
-                    case SAMPLE_TYPE_KEY_STAY_COLOR:
-                        loadGrayImage();
-                        Bitmap b5 = loadRGBAImage(R.drawable.lye2);
-                        loadRGBAImage(R.drawable.ascii_mapping, 1);
-                        mGLSurfaceView.setAspectRatio(b5.getWidth(), b5.getHeight());
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-                    case SAMPLE_TYPE_KEY_TRANSITIONS_1:
-                    case SAMPLE_TYPE_KEY_TRANSITIONS_2:
-                    case SAMPLE_TYPE_KEY_TRANSITIONS_3:
-                    case SAMPLE_TYPE_KEY_TRANSITIONS_4:
-                        loadRGBAImage(R.drawable.lye, 0);
-                        loadRGBAImage(R.drawable.lye4, 1);
-                        loadRGBAImage(R.drawable.lye5, 2);
-                        loadRGBAImage(R.drawable.lye6, 3);
-                        loadRGBAImage(R.drawable.lye7, 4);
-                        tmp = loadRGBAImage(R.drawable.lye8, 5);
-                        mGLSurfaceView.setAspectRatio(tmp.getWidth(), tmp.getHeight());
-                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-                        break;
-//                    case SAMPLE_TYPE_KEY_CONVEYOR_BELT:
-//                        tmp = loadRGBAImage(R.drawable.lye4);
-//                        mGLSurfaceView.setAspectRatio(tmp.getWidth(), tmp.getHeight());
-//                        mGLSurfaceView.setRenderMode(RENDERMODE_CONTINUOUSLY);
-//                        break;
-                    default:
-                        break;
+                        MyNativeRender.SAMPLE_TYPE_FBO_LEG -> loadRGBAImage(R.drawable.leg)
+                        MyNativeRender.SAMPLE_TYPE_EGL -> startActivity(
+                            Intent(
+                                this@MainActivity,
+                                EGLActivity::class.java
+                            )
+                        )
+                        MyNativeRender.SAMPLE_TYPE_COORD_SYSTEM,
+                        MyNativeRender.SAMPLE_TYPE_BASIC_LIGHTING, MyNativeRender.SAMPLE_TYPE_TRANS_FEEDBACK,
+                        MyNativeRender.SAMPLE_TYPE_MULTI_LIGHTS,
+                        MyNativeRender.SAMPLE_TYPE_DEPTH_TESTING,
+                        MyNativeRender.SAMPLE_TYPE_INSTANCING,
+                        MyNativeRender.SAMPLE_TYPE_STENCIL_TESTING -> loadRGBAImage(
+                            R.drawable.card
+                        )
+                        MyNativeRender.SAMPLE_TYPE_BLENDING -> {
+                            loadRGBAImage(R.drawable.board_texture, 0)
+                            loadRGBAImage(R.drawable.floor, 1)
+                            loadRGBAImage(R.drawable.window, 2)
+                        }
+                        MyNativeRender.SAMPLE_TYPE_PARTICLES -> {
+                            loadRGBAImage(R.drawable.board_texture)
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        }
+                        MyNativeRender.SAMPLE_TYPE_SKYBOX -> {
+                            loadRGBAImage(R.drawable.right, 0)
+                            loadRGBAImage(R.drawable.left, 1)
+                            loadRGBAImage(R.drawable.top, 2)
+                            loadRGBAImage(R.drawable.bottom, 3)
+                            loadRGBAImage(R.drawable.back, 4)
+                            loadRGBAImage(R.drawable.front, 5)
+                        }
+                        MyNativeRender.SAMPLE_TYPE_PBO -> {
+                            loadRGBAImage(R.drawable.front)
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_BEATING_HEART -> mGLSurfaceView!!.renderMode =
+                            GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        MyNativeRender.SAMPLE_TYPE_KEY_CLOUD -> {
+                            loadRGBAImage(R.drawable.noise)
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_TIME_TUNNEL -> {
+                            loadRGBAImage(R.drawable.front)
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_BEZIER_CURVE ->
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        MyNativeRender.SAMPLE_TYPE_KEY_BIG_EYES,
+                        MyNativeRender.SAMPLE_TYPE_KEY_FACE_SLENDER -> {
+                            val bitmap = loadRGBAImage(R.drawable.yifei)
+                            glSurfaceView.setAspectRatio(bitmap!!.width, bitmap.height)
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_BIG_HEAD,
+                        MyNativeRender.SAMPLE_TYPE_KEY_ROTARY_HEAD -> {
+                            val b = loadRGBAImage(R.drawable.huge)
+                            glSurfaceView.setAspectRatio(b!!.width, b.height)
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_VISUALIZE_AUDIO -> {
+                            if (mAudioCollector == null) {
+                                mAudioCollector = AudioCollector()
+                                mAudioCollector?.addCallback(this@MainActivity)
+                                mAudioCollector?.init(this@MainActivity)
+                            }
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                            val b1 = loadRGBAImage(R.drawable.yifei)
+                            glSurfaceView.setAspectRatio(b1!!.width, b1.height)
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_SCRATCH_CARD -> {
+                            val b1 = loadRGBAImage(R.drawable.yifei)
+                            glSurfaceView.setAspectRatio(b1!!.width, b1.height)
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_AVATAR -> {
+                            val b2 = loadRGBAImage(R.drawable.avatar_a, 0)
+                            glSurfaceView.setAspectRatio(b2!!.width, b2.height)
+                            loadRGBAImage(R.drawable.avatar_b, 1)
+                            loadRGBAImage(R.drawable.avatar_c, 2)
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_SHOCK_WAVE,
+                        MyNativeRender.SAMPLE_TYPE_KEY_MULTI_THREAD_RENDER,
+                        MyNativeRender.SAMPLE_TYPE_KEY_TEXT_RENDER -> {
+                            val b3 = loadRGBAImage(R.drawable.lye)
+                            glSurfaceView.setAspectRatio(b3!!.width, b3.height)
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_MRT,
+                        MyNativeRender.SAMPLE_TYPE_KEY_FBO_BLIT,
+                        MyNativeRender.SAMPLE_TYPE_KEY_TBO,
+                        MyNativeRender.SAMPLE_TYPE_KEY_UBO,
+                        MyNativeRender.SAMPLE_TYPE_KEY_BINARY_PROGRAM -> {
+                            val b4 = loadRGBAImage(R.drawable.lye)
+                            glSurfaceView.setAspectRatio(b4!!.width, b4.height)
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_RGB2YUYV,
+                        MyNativeRender.SAMPLE_TYPE_KEY_RGB2NV21,
+                        MyNativeRender.SAMPLE_TYPE_KEY_RGB2I420,
+                        MyNativeRender.SAMPLE_TYPE_KEY_RGB2I444 -> {
+                            tmp = loadRGBAImage(R.drawable.sk)
+                            glSurfaceView.setAspectRatio(tmp!!.width, tmp.height)
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_STAY_COLOR -> {
+                            loadGrayImage()
+                            val b5 = loadRGBAImage(R.drawable.lye2)
+                            loadRGBAImage(R.drawable.ascii_mapping, 1)
+                            glSurfaceView.setAspectRatio(b5!!.width, b5.height)
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        }
+                        MyNativeRender.SAMPLE_TYPE_KEY_TRANSITIONS_1,
+                        MyNativeRender.SAMPLE_TYPE_KEY_TRANSITIONS_2,
+                        MyNativeRender.SAMPLE_TYPE_KEY_TRANSITIONS_3,
+                        MyNativeRender.SAMPLE_TYPE_KEY_TRANSITIONS_4 -> {
+                            loadRGBAImage(R.drawable.lye, 0)
+                            loadRGBAImage(R.drawable.lye4, 1)
+                            loadRGBAImage(R.drawable.lye5, 2)
+                            loadRGBAImage(R.drawable.lye6, 3)
+                            loadRGBAImage(R.drawable.lye7, 4)
+                            tmp = loadRGBAImage(R.drawable.lye8, 5)
+                            glSurfaceView.setAspectRatio(tmp!!.width, tmp.height)
+                            glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+                        }
+                        else -> {}
+                    }
+                    glSurfaceView.requestRender()
+                    mAudioCollector?.let { audioCollector ->
+                        if (sampleType != MyNativeRender.SAMPLE_TYPE_KEY_VISUALIZE_AUDIO) {
+                            audioCollector.unInit()
+                            mAudioCollector = null
+                        }
+                    }
+
+                    dialog.cancel()
                 }
+            }
+        )
+        val manager = LinearLayoutManager(this)
+        manager.orientation = LinearLayoutManager.VERTICAL
+        resolutionsListView.layoutManager = manager
+        resolutionsListView.adapter = myPreviewSizeViewAdapter
+        resolutionsListView.scrollToPosition(mSampleSelectedIndex)
+        dialog.show()
+        dialog.window?.setContentView(rootView)
+    }
 
-                mGLSurfaceView.requestRender();
-
-                if(sampleType != SAMPLE_TYPE_KEY_VISUALIZE_AUDIO && mAudioCollector != null) {
-                    mAudioCollector.unInit();
-                    mAudioCollector = null;
+    private fun loadRGBAImage(resId: Int): Bitmap? {
+        return try {
+            this.resources.openRawResource(resId).use { inputStream ->
+                BitmapFactory.decodeStream(inputStream)?.also { bitmap ->
+                    ByteBuffer.allocate(bitmap.byteCount).apply {
+                        bitmap.copyPixelsToBuffer(this)
+                        mGLRender.setImageData(
+                            MyGLSurfaceView.IMAGE_FORMAT_RGBA,
+                            bitmap.width,
+                            bitmap.height,
+                            this.array()
+                        )
+                    }
                 }
-
-                dialog.cancel();
             }
-        });
-
-        LinearLayoutManager manager = new LinearLayoutManager(this);
-        manager.setOrientation(LinearLayoutManager.VERTICAL);
-        resolutionsListView.setLayoutManager(manager);
-
-        resolutionsListView.setAdapter(myPreviewSizeViewAdapter);
-        resolutionsListView.scrollToPosition(mSampleSelectedIndex);
-
-        dialog.show();
-        dialog.getWindow().setContentView(rootView);
-
+        } catch (e: IOException) {
+            e.printStackTrace()
+            null
+        }
     }
 
-    private Bitmap loadRGBAImage(int resId) {
-        InputStream is = this.getResources().openRawResource(resId);
-        Bitmap bitmap;
-        try {
-            bitmap = BitmapFactory.decodeStream(is);
-            if (bitmap != null) {
-                int bytes = bitmap.getByteCount();
-                ByteBuffer buf = ByteBuffer.allocate(bytes);
-                bitmap.copyPixelsToBuffer(buf);
-                byte[] byteArray = buf.array();
-                mGLRender.setImageData(IMAGE_FORMAT_RGBA, bitmap.getWidth(), bitmap.getHeight(), byteArray);
+    private fun loadRGBAImage(resId: Int, index: Int): Bitmap? {
+        return try {
+            this.resources.openRawResource(resId).use { inputStream ->
+                BitmapFactory.decodeStream(inputStream)?.also { bitmap ->
+                    val bytes = bitmap.byteCount
+                    val buffer = ByteBuffer.allocate(bytes).apply {
+                        bitmap.copyPixelsToBuffer(this)
+                    }
+                    mGLRender.setImageDataWithIndex(
+                        index,
+                        MyGLSurfaceView.IMAGE_FORMAT_RGBA,
+                        bitmap.width,
+                        bitmap.height,
+                        buffer.array()
+                    )
+                }
             }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            null
         }
-        finally
-        {
-            try
-            {
-                is.close();
-            }
-            catch(IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-        return bitmap;
     }
 
-    private Bitmap loadRGBAImage(int resId, int index) {
-        InputStream is = this.getResources().openRawResource(resId);
-        Bitmap bitmap;
+    private fun loadNV21Image() {
         try {
-            bitmap = BitmapFactory.decodeStream(is);
-            if (bitmap != null) {
-                int bytes = bitmap.getByteCount();
-                ByteBuffer buf = ByteBuffer.allocate(bytes);
-                bitmap.copyPixelsToBuffer(buf);
-                byte[] byteArray = buf.array();
-                mGLRender.setImageDataWithIndex(index, IMAGE_FORMAT_RGBA, bitmap.getWidth(), bitmap.getHeight(), byteArray);
+            val buffer = assets.open("YUV_Image_840x1074.NV21").use { inputStream ->
+                ByteArray(inputStream.available()).also {
+                    inputStream.read(it)
+                }
             }
+            mGLRender.setImageData(MyGLSurfaceView.IMAGE_FORMAT_NV21, 840, 1074, buffer)
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
-        finally
-        {
-            try
-            {
-                is.close();
-            }
-            catch(IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-        return bitmap;
     }
 
-    private void loadNV21Image() {
-        InputStream is = null;
+    private fun loadGrayImage() {
         try {
-            is = getAssets().open("YUV_Image_840x1074.NV21");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        int lenght = 0;
-        try {
-            lenght = is.available();
-            byte[] buffer = new byte[lenght];
-            is.read(buffer);
-            mGLRender.setImageData(IMAGE_FORMAT_NV21, 840, 1074, buffer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try
-            {
-                is.close();
+            val buffer = assets.open("lye_1280x800.Gray").use { inputStream ->
+                ByteArray(inputStream.available()).also {
+                    inputStream.read(it)
+                }
             }
-            catch(IOException e)
-            {
-                e.printStackTrace();
-            }
+            mGLRender.setImageDataWithIndex(0, MyGLSurfaceView.IMAGE_FORMAT_GARY, 1280, 800, buffer)
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
-
     }
 
-    private void loadGrayImage() {
-        InputStream is = null;
-        try {
-            is = getAssets().open("lye_1280x800.Gray");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        int lenght = 0;
-        try {
-            lenght = is.available();
-            byte[] buffer = new byte[lenght];
-            is.read(buffer);
-            mGLRender.setImageDataWithIndex(0, IMAGE_FORMAT_GARY, 1280, 800, buffer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try
-            {
-                is.close();
-            }
-            catch(IOException e)
-            {
-                e.printStackTrace();
+     private fun hasPermissionsGranted(permissions: Array<String?>): Boolean {
+        for (permission in permissions) {
+            if (ActivityCompat.checkSelfPermission(this, permission!!)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
             }
         }
-
+        return true
     }
 
-    protected boolean hasPermissionsGranted(String[] permissions) {
-        for (String permission : permissions) {
-            if (ActivityCompat.checkSelfPermission(this, permission)
-                    != PackageManager.PERMISSION_GRANTED) {
-                return false;
-            }
-        }
-        return true;
+    companion object {
+        private const val TAG = "MainActivity"
+        private val REQUEST_PERMISSIONS = arrayOf<String?>(
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.RECORD_AUDIO
+        )
+        private const val PERMISSION_REQUEST_CODE = 1
+        private val SAMPLE_TITLES = arrayOf(
+            "画三角形",
+            "纹理映射",
+            "YUV渲染",
+            "VAO和VBO",
+            "FBO离屏渲染",
+            "EGL背景渲染",
+            "FBO拉伸",
+            "坐标系统",
+            "基础照明",
+            "变换反馈",
+            "复杂照明",
+            "深度测试",
+            "实例化",
+            "模板测试",
+            "混合",
+            "粒子",
+            "天空盒",
+            "Assimp加载3D模型",
+            "PBO",
+            "跳动的心脏",
+            "云",
+            "时间隧道",
+            "贝塞尔曲线",
+            "大眼睛",
+            "瘦脸",
+            "大头",
+            "旋转头",
+            "可视化音频",
+            "刮刮卡",
+            "3D头像",
+            "冲击波",
+            "MRT",
+            "FBO Blit",
+            "纹理缓冲区",
+            "统一缓冲区",
+            "RGB转YUYV",
+            "多线程渲染",
+            "文本渲染",
+            "人像保留颜色",
+            "GL过渡_1",
+            "GL过渡_2",
+            "GL过渡_3",
+            "GL过渡_4",
+            "RGB转NV21",
+            "RGB转I420",
+            "RGB转I444",
+            "复制纹理",
+            "Blit帧缓冲区",
+            "二进制程序"
+        )
     }
 
+    override fun onAudioBufferCallback(buffer: ShortArray?) {
+        Log.e(TAG, "onAudioBufferCallback() called with: buffer[0] = [" + buffer!![0] + "]")
+        mGLRender.setAudioData(buffer)
+    }
 }

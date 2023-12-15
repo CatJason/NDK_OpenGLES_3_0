@@ -1,53 +1,54 @@
-package com.byteflow.app;
+package com.byteflow.app
 
-import android.content.Context;
-import android.util.Log;
+import android.content.Context
+import android.util.Log
+import java.io.File
+import java.io.FileOutputStream
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-
-public class CommonUtils {
-    private static final String TAG = "CommonUtils";
-
-    public static void copyAssetsDirToSDCard(Context context, String assetsDirName, String sdCardPath) {
-        Log.d(TAG, "copyAssetsDirToSDCard() called with: context = [" + context + "], assetsDirName = [" + assetsDirName + "], sdCardPath = [" + sdCardPath + "]");
+object CommonUtils {
+    private const val TAG = "CommonUtils"
+    fun copyAssetsDirToSDCard(context: Context, assetsDirName: String, sdCardPath: String) {
+        var sdCardPath = sdCardPath
+        Log.d(
+            TAG,
+            "copyAssetsDirToSDCard() called with: context = [$context], assetsDirName = [$assetsDirName], sdCardPath = [$sdCardPath]"
+        )
         try {
-            String list[] = context.getAssets().list(assetsDirName);
-            if (list.length == 0) {
-                InputStream inputStream = context.getAssets().open(assetsDirName);
-                byte[] mByte = new byte[1024];
-                int bt = 0;
-                File file = new File(sdCardPath + File.separator
-                        + assetsDirName.substring(assetsDirName.lastIndexOf('/')));
+            val list = context.assets.list(assetsDirName)
+            if (list!!.size == 0) {
+                val inputStream = context.assets.open(assetsDirName)
+                val mByte = ByteArray(1024)
+                var bt = 0
+                val file = File(
+                    sdCardPath + File.separator
+                            + assetsDirName.substring(assetsDirName.lastIndexOf('/'))
+                )
                 if (!file.exists()) {
-                    file.createNewFile();
+                    file.createNewFile()
                 } else {
-                    return;
+                    return
                 }
-                FileOutputStream fos = new FileOutputStream(file);
-                while ((bt = inputStream.read(mByte)) != -1) {
-                    fos.write(mByte, 0, bt);
+                val fos = FileOutputStream(file)
+                while (inputStream.read(mByte).also { bt = it } != -1) {
+                    fos.write(mByte, 0, bt)
                 }
-                fos.flush();
-                inputStream.close();
-                fos.close();
+                fos.flush()
+                inputStream.close()
+                fos.close()
             } else {
-                String subDirName = assetsDirName;
+                var subDirName = assetsDirName
                 if (assetsDirName.contains("/")) {
-                    subDirName = assetsDirName.substring(assetsDirName.lastIndexOf('/') + 1);
+                    subDirName = assetsDirName.substring(assetsDirName.lastIndexOf('/') + 1)
                 }
-                sdCardPath = sdCardPath + File.separator + subDirName;
-                File file = new File(sdCardPath);
-                if (!file.exists())
-                    file.mkdirs();
-                for (String s : list) {
-                    copyAssetsDirToSDCard(context, assetsDirName + File.separator + s, sdCardPath);
+                sdCardPath = sdCardPath + File.separator + subDirName
+                val file = File(sdCardPath)
+                if (!file.exists()) file.mkdirs()
+                for (s in list) {
+                    copyAssetsDirToSDCard(context, assetsDirName + File.separator + s, sdCardPath)
                 }
             }
-        } catch (
-                Exception e) {
-            e.printStackTrace();
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

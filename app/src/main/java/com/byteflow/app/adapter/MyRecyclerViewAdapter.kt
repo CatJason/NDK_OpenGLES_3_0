@@ -1,89 +1,66 @@
-package com.byteflow.app.adapter;
+package com.byteflow.app.adapter
 
-import android.content.Context;
-import android.graphics.Color;
-import androidx.annotation.*;
-import androidx.recyclerview.widget.RecyclerView;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.RadioButton;
-import android.widget.TextView;
+import android.content.Context
+import android.graphics.Color
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.RadioButton
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+import com.byteflow.app.R
+import com.byteflow.app.adapter.MyRecyclerViewAdapter.MyViewHolder
 
-import com.byteflow.app.R;
-
-import java.util.List;
-
-public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAdapter.MyViewHolder> implements View.OnClickListener {
-    private List<String> mTitles;
-    private Context mContext;
-    private int mSelectIndex = 0;
-    private OnItemClickListener mOnItemClickListener = null;
-
-    public MyRecyclerViewAdapter(Context context, List<String> titles) {
-        mContext = context;
-        mTitles = titles;
+class MyRecyclerViewAdapter(private val mContext: Context, private val mTitles: List<String>) :
+    RecyclerView.Adapter<MyViewHolder>(), View.OnClickListener {
+    var selectIndex = 0
+    private var mOnItemClickListener: OnItemClickListener? = null
+    fun addOnItemClickListener(onItemClickListener: OnItemClickListener?) {
+        mOnItemClickListener = onItemClickListener
     }
 
-    public void setSelectIndex(int index) {
-        mSelectIndex = index;
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
+        val view =
+            LayoutInflater.from(parent.context).inflate(R.layout.sample_item_layout, parent, false)
+        val myViewHolder = MyViewHolder(view)
+        view.setOnClickListener(this)
+        return myViewHolder
     }
 
-    public int getSelectIndex() {
-        return mSelectIndex;
-    }
-
-    public void addOnItemClickListener(OnItemClickListener onItemClickListener) {
-        mOnItemClickListener = onItemClickListener;
-    }
-
-    @NonNull
-    @Override
-    public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.sample_item_layout, parent, false);
-        MyViewHolder myViewHolder = new MyViewHolder(view);
-        view.setOnClickListener(this);
-        return myViewHolder;
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-        holder.mTitle.setText(mTitles.get(position));
-        if (position == mSelectIndex) {
-            holder.mRadioButton.setChecked(true);
-            holder.mTitle.setTextColor(mContext.getResources().getColor(R.color.colorAccent));
-        } else {
-            holder.mRadioButton.setChecked(false);
-            holder.mTitle.setText(mTitles.get(position));
-            holder.mTitle.setTextColor(Color.GRAY);
-        }
-        holder.itemView.setTag(position);
-    }
-
-    @Override
-    public int getItemCount() {
-        return mTitles.size();
-    }
-
-    @Override
-    public void onClick(View v) {
-        if (mOnItemClickListener != null) {
-            mOnItemClickListener.onItemClick(v, (Integer) v.getTag());
+    override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
+        with(holder) {
+            mTitle.text = mTitles[position]
+            if (position == selectIndex) {
+                mRadioButton.isChecked = true
+                mTitle.setTextColor(mContext.resources.getColor(R.color.colorAccent))
+            } else {
+                mRadioButton.isChecked = false
+                mTitle.text = mTitles[position]
+                mTitle.setTextColor(Color.GRAY)
+            }
+            itemView.tag = position
         }
     }
 
-    public interface OnItemClickListener {
-        void onItemClick(View view, int position);
+    override fun getItemCount(): Int {
+        return mTitles.size
     }
 
-    class MyViewHolder extends RecyclerView.ViewHolder {
-        RadioButton mRadioButton;
-        TextView mTitle;
+    override fun onClick(v: View) {
+        mOnItemClickListener?.onItemClick(v, v.tag as Int)
+    }
 
-        public MyViewHolder(View itemView) {
-            super(itemView);
-            mRadioButton = itemView.findViewById(R.id.radio_btn);
-            mTitle = itemView.findViewById(R.id.item_title);
+    interface OnItemClickListener {
+        fun onItemClick(view: View?, position: Int)
+    }
+
+    inner class MyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        var mRadioButton: RadioButton
+        var mTitle: TextView
+
+        init {
+            mRadioButton = itemView.findViewById(R.id.radio_btn)
+            mTitle = itemView.findViewById(R.id.item_title)
         }
     }
 }
