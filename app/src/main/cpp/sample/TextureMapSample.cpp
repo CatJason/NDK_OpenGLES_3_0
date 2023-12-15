@@ -1,7 +1,3 @@
-//
-// Created by ByteFlow on 2019/7/10.
-//
-
 #include <GLUtils.h>
 #include <LogUtil.h>
 #include "TextureMapSample.h"

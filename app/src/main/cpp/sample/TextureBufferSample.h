@@ -1,7 +1,3 @@
-//
-// Created by ByteFlow on 2021/7/30.
-//
-
 #ifndef NDK_OPENGLES_3_0_TEXTUREBUFFERSAMPLE_H
 #define NDK_OPENGLES_3_0_TEXTUREBUFFERSAMPLE_H
 

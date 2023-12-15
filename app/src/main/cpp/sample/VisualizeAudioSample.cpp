@@ -1,7 +1,3 @@
-//
-// Created by ByteFlow on 2020/4/30.
-//
-
 #include <gtc/matrix_transform.hpp>
 #include <thread>
 #include "VisualizeAudioSample.h"

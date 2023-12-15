@@ -1,33 +1,31 @@
-/**
- *
- * Created by 公众号：字节流动 on 2020/4/18.
- * https://github.com/githubhaohao/NDK_OpenGLES_3_0
- * 最新文章首发于公众号：字节流动，有疑问或者技术交流可以添加微信 Byte-Flow ,领取视频教程, 拉你进技术交流群
- *
- * */
-
 #include <gtc/matrix_transform.hpp>
 #include "BasicLightingSample.h"
 #include "../util/GLUtils.h"
 
 BasicLightingSample::BasicLightingSample()
 {
-
-	m_SamplerLoc = GL_NONE;
-	m_MVPMatLoc = GL_NONE;
-	m_ModelMatrixLoc = GL_NONE;
-	m_LightPosLoc = GL_NONE;
-
-	m_TextureId = GL_NONE;
-	m_VaoId = GL_NONE;
-
-	m_AngleX = 0;
-	m_AngleY = 0;
-
-	m_ScaleX = 1.0f;
-	m_ScaleY = 1.0f;
-
-	m_ModelMatrix = glm::mat4(0.0f);
+    // 初始化纹理采样器位置为无效值
+    m_SamplerLoc = GL_NONE;
+    // 初始化 MVP 矩阵（模型-视图-投影矩阵）变量位置为无效值
+    m_MVPMatLoc = GL_NONE;
+    // 初始化模型矩阵变量位置为无效值
+    m_ModelMatrixLoc = GL_NONE;
+    // 初始化光源位置变量为无效值
+    m_LightPosLoc = GL_NONE;
+    // 初始化纹理 ID 为无效值
+    m_TextureId = GL_NONE;
+    // 初始化 VAO（顶点数组对象）ID 为无效值
+    m_VaoId = GL_NONE;
+    // 初始化模型绕 X 轴的旋转角度为 0 度
+    m_AngleX = 0;
+    // 初始化模型绕 Y 轴的旋转角度为 0 度
+    m_AngleY = 0;
+    // 初始化模型 X 轴的缩放比例为 1.0（无缩放）
+    m_ScaleX = 1.0f;
+    // 初始化模型 Y 轴的缩放比例为 1.0（无缩放）
+    m_ScaleY = 1.0f;
+    // 初始化模型矩阵为 4x4 零矩阵
+    m_ModelMatrix = glm::mat4(0.0f);
 }
 
 BasicLightingSample::~BasicLightingSample()
@@ -52,6 +50,12 @@ void BasicLightingSample::Init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
+    /**
+     * 光照计算：
+     * 环境光 (ambient)：模拟光源对场景的整体照明。
+     * 漫反射 (diffuse)：模拟光线与物体表面法向量的交互。
+     * 高光 (specular)：模拟镜面反射的高光效果。
+     */
 	char vShaderStr[] =
 			"#version 300 es\n"
 			"precision mediump float;\n"

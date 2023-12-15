@@ -1,7 +1,3 @@
-//
-// Created by ByteFlow on 2019/7/30.
-//
-
 #include <gtc/matrix_transform.hpp>
 #include "Model3DSample.h"
 #include "../util/GLUtils.h"

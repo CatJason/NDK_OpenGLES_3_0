@@ -194,12 +194,14 @@ class MyGLSurfaceView @JvmOverloads constructor(
     }
 
     companion object {
-        private const val TAG = "MyGLSurfaceView"
-        const val IMAGE_FORMAT_RGBA = 0x01
-        const val IMAGE_FORMAT_NV21 = 0x02
-        const val IMAGE_FORMAT_NV12 = 0x03
-        const val IMAGE_FORMAT_I420 = 0x04
-        const val IMAGE_FORMAT_YUYV = 0x05
-        const val IMAGE_FORMAT_GARY = 0x06
+        private const val TAG = "MyGLSurfaceView" // 日志标记，用于调试输出。
+
+        const val IMAGE_FORMAT_RGBA = 0x01 // 图像格式：RGBA（红绿蓝和透明度）。
+        const val IMAGE_FORMAT_NV21 = 0x02 // 图像格式：NV21（YUV 4:2:0 格式，常用于相机）。
+        const val IMAGE_FORMAT_NV12 = 0x03 // 图像格式：NV12（YUV 4:2:0 格式，排列方式与 NV21 不同）。
+        const val IMAGE_FORMAT_I420 = 0x04 // 图像格式：I420（YUV 4:2:0 格式，逐行扫描）。
+        const val IMAGE_FORMAT_YUYV = 0x05 // 图像格式：YUYV（YUV 4:2:2 格式）。
+        const val IMAGE_FORMAT_GARY = 0x06 // 图像格式：灰度图（单通道图像）。
     }
+
 }

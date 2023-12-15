@@ -16,10 +16,17 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.IntBuffer
 
+/**
+ * EGLActivity 类，用于展示 OpenGL 渲染结果并通过菜单切换不同的着色器效果。
+ */
 class EGLActivity : AppCompatActivity() {
-    private var mImageView: ImageView? = null
-    private var mBtn: Button? = null
-    private var mBgRender: NativeEglRender? = null
+    private var mImageView: ImageView? = null // 用于显示渲染结果的 ImageView
+    private var mBtn: Button? = null // 控制渲染的按钮
+    private var mBgRender: NativeEglRender? = null // 本地渲染器对象
+
+    /**
+     * 初始化 Activity，设置布局和事件监听器。
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_egl)
@@ -39,25 +46,25 @@ class EGLActivity : AppCompatActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-    }
-
+    /**
+     * 在 Activity 销毁时释放本地渲染器资源。
+     */
     override fun onDestroy() {
         super.onDestroy()
         mBgRender?.native_EglRenderUnInit()
     }
 
+    /**
+     * 创建菜单。
+     */
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.menu_egl, menu)
+        menuInflater.inflate(R.menu.menu_egl, menu) // 加载菜单布局
         return true
     }
 
+    /**
+     * 菜单项点击事件处理。
+     */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val id = item.itemId
         var shaderIndex = 0
@@ -69,22 +76,29 @@ class EGLActivity : AppCompatActivity() {
             R.id.action_shader4 -> shaderIndex = 4
             R.id.action_shader5 -> shaderIndex = 5
             R.id.action_shader6 -> shaderIndex = 6
-            else -> {}
         }
-        if (mBgRender != null) {
-            mBgRender!!.native_EglRenderSetIntParams(PARAM_TYPE_SHADER_INDEX, shaderIndex)
+        mBgRender?.let {
+            it.native_EglRenderSetIntParams(PARAM_TYPE_SHADER_INDEX, shaderIndex)
             startBgRender()
             mBtn?.setText(R.string.btn_txt_reset)
         }
         return true
     }
 
+    /**
+     * 开始渲染背景图像。
+     */
     private fun startBgRender() {
         loadRGBAImage(R.drawable.leg, mBgRender)
         mBgRender!!.native_EglRenderDraw()
         mImageView!!.setImageBitmap(createBitmapFromGLSurface(0, 0, 933, 1400))
     }
 
+    /**
+     * 加载 RGBA 图像并传递给本地渲染器。
+     * @param resId 资源 ID
+     * @param render 渲染器对象
+     */
     private fun loadRGBAImage(resId: Int, render: NativeEglRender?) {
         try {
             this.resources.openRawResource(resId).use { inputStream ->
@@ -93,7 +107,7 @@ class EGLActivity : AppCompatActivity() {
                     val bytes = it.byteCount
                     val buffer = ByteBuffer.allocateDirect(bytes)
                     it.copyPixelsToBuffer(buffer)
-                    buffer.rewind() // 重置buffer的位置
+                    buffer.rewind() // 重置缓冲区位置
                     render?.native_EglRenderSetImageData(buffer.array(), it.width, it.height)
                 }
             }
@@ -102,7 +116,14 @@ class EGLActivity : AppCompatActivity() {
         }
     }
 
-
+    /**
+     * 从 OpenGL 缓冲区中创建位图。
+     * @param x 起始 x 坐标
+     * @param y 起始 y 坐标
+     * @param w 宽度
+     * @param h 高度
+     * @return 从 OpenGL 缓冲区生成的位图
+     */
     private fun createBitmapFromGLSurface(x: Int, y: Int, w: Int, h: Int): Bitmap? {
         val bitmapBuffer = IntArray(w * h)
         val bitmapSource = IntArray(w * h)
@@ -133,7 +154,7 @@ class EGLActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val TAG = "EGLActivity"
-        const val PARAM_TYPE_SHADER_INDEX = 200
+        private const val TAG = "EGLActivity" // 日志标记
+        const val PARAM_TYPE_SHADER_INDEX = 200 // 着色器索引参数类型
     }
 }

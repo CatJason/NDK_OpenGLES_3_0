@@ -1,7 +1,3 @@
-//
-// Created by ByteFlow on 2020/2/30.
-//
-
 #ifndef NDK_OPENGLES_3_0_ROTARYHEAD_SAMPLE_H
 #define NDK_OPENGLES_3_0_ROTARYHEAD_SAMPLE_H
 
