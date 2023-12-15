@@ -1,14 +1,9 @@
-package com.byteflow.app.egl;
+package com.byteflow.app.egl
 
-public class NativeEglRender {
-
-    public native void native_EglRenderInit();
-
-    public native void native_EglRenderSetImageData(byte[] data, int width, int height);
-
-    public native void native_EglRenderSetIntParams(int paramType, int param);
-
-    public native void native_EglRenderDraw();
-
-    public native void native_EglRenderUnInit();
+class NativeEglRender {
+    external fun native_EglRenderInit()
+    external fun native_EglRenderSetImageData(data: ByteArray?, width: Int, height: Int)
+    external fun native_EglRenderSetIntParams(paramType: Int, param: Int)
+    external fun native_EglRenderDraw()
+    external fun native_EglRenderUnInit()
 }
